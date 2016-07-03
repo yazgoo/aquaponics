@@ -1,0 +1,165 @@
+<html>
+    <head>
+        <title>My first Three.js app</title>
+        <style>
+            body { margin: 0; }
+            canvas { width: 100%; height: 100% }
+        </style>
+    </head>
+    <body>
+        <script src="js/three.js"></script>
+        <script src="js/ThreeCSG.js"></script>
+        <script src="js/TrackballControls.js"></script>
+        <script>
+var camera, controls, scene, renderer;
+var ray = 0.2705;
+var diameter = 2 * ray;
+var length = 0.965;
+var size = 0.05
+var outSize = 0.01
+var p = 0.005;
+
+function half() {
+    var box = new THREE.BoxGeometry(diameter, length, diameter);
+    var box_mesh = new THREE.Mesh(box);
+    box_mesh.position.x = ray;
+    var cylinder = new THREE.CylinderGeometry(ray, ray, length, 32 );
+    var cylinder_mesh = new THREE.Mesh(cylinder);
+    var cylinder2 = new THREE.CylinderGeometry(ray -p, ray -p, length -2 * p, 32 );
+    var cylinder2_mesh = new THREE.Mesh(cylinder2);
+    var subtract_bsp = new ThreeBSP(cylinder_mesh).subtract(new ThreeBSP(box_mesh)).subtract(new ThreeBSP(cylinder2_mesh));
+    var result = subtract_bsp.toMesh( new THREE.MeshStandardMaterial({ shading: THREE.SmoothShading, color: 0x0000ff }) );
+    result.geometry.computeVertexNormals();
+    result.rotation.z = 3.14/2
+    return result;
+}
+function bar(x, y, z) {
+    var geometry = new THREE.BoxGeometry(x, y, z);
+    var material = new THREE.MeshLambertMaterial(
+            { color: 0x894b08 } );
+    var cube = new THREE.Mesh( geometry, material );
+    return cube;
+}
+function lengthBar() {
+    return bar(length + 2 * size, size, size);
+}
+function widthBar() {
+    return bar(size, size, ray * 2 - size * 2)
+}
+function verticalBar() {
+    return bar(size, ray * 2, size)
+}
+function addOffsetBar(bar0, x, y, z)
+{
+    bar0.position.x += x;
+    bar0.position.z += z;
+    bar0.position.y += y;
+    scene.add(bar0);
+}
+function addHorizontalBars(y) {
+    addOffsetBar(lengthBar(), 0, y, ray / 2 + size)
+    addOffsetBar(lengthBar(), 0, y, - ray / 2 - size)
+    addOffsetBar(widthBar(), - size - length / 2, y, 0);
+    addOffsetBar(widthBar(), length / 2 + size, y, 0);
+}
+function addVerticalBars() {
+    addOffsetBar(verticalBar(), length / 2 + size, - ray , ray / 2 + size);
+    addOffsetBar(verticalBar(), -(length / 2 + size), - ray , ray / 2 + size);
+    addOffsetBar(verticalBar(), length / 2 + size, - ray , -(ray / 2 + size));
+    addOffsetBar(verticalBar(), -(length / 2 + size), - ray , -(ray / 2 + size));
+}
+function getPipe(width) {
+    var geometry = new THREE.CylinderGeometry(outSize, outSize, width, 32, 32);
+    var material = new THREE.MeshLambertMaterial(
+            { color: 0xffffff } );
+    var waterOut = new THREE.Mesh( geometry, material );
+    return waterOut;
+}
+function addCulture() {
+    culture = half();
+    culture.position.y += ray - size / 2
+    scene.add(culture)
+    var waterOut = getPipe(outSize);
+    waterOut.position.x += length/ 2;
+    waterOut.position.y += outSize
+    waterOut.rotation.z = 3.14/2
+    scene.add(waterOut)
+    var waterOut2 = getPipe(ray);
+    waterOut2.position.x += length/2;
+    waterOut2.position.y -= ray/2
+    scene.add(waterOut2)
+    var waterOut0 = getPipe(length/4);
+    waterOut0.position.x += length/2 - length / 8;
+    waterOut0.rotation.z = 3.14/2
+    scene.add(waterOut0)
+}
+function addStructure() {
+    addHorizontalBars(0)
+    addHorizontalBars(-ray * 2 + size / 2)
+    addVerticalBars()
+}
+function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+                controls = new THREE.TrackballControls( camera );
+
+                controls.rotateSpeed = 1.0;
+                controls.zoomSpeed = 1.2;
+                controls.panSpeed = 0.8;
+
+                controls.noZoom = false;
+                controls.noPan = false;
+
+                controls.staticMoving = true;
+                controls.dynamicDampingFactor = 0.3;
+
+                controls.keys = [ 65, 83, 68 ];
+
+                controls.addEventListener( 'change', render );
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            document.body.appendChild( renderer.domElement );
+
+            var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+            var material = new THREE.MeshStandardMaterial( { color: 0x00ff00 } );
+            var cube = new THREE.Mesh( geometry, material );
+            var light = new THREE.AmbientLight( 0x404040 ); // soft white light
+            var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.8 );
+            directionalLight.position.set( 10, 10, 10 );
+            scene.add( directionalLight );
+
+            scene.add( light );
+
+            //scene.add( cube );
+            var tank = half();
+            tank.position.y -= ray
+            scene.add(tank)
+            addCulture();
+            addStructure();
+
+            camera.position.z = 1.5;
+render();
+}
+
+            function render() {
+                requestAnimationFrame( render );
+
+                /*cube.rotation.x += 0.1;
+                cube.rotation.y += 0.1;*/
+
+                renderer.render(scene, camera);
+            };
+function animate() {
+
+    requestAnimationFrame( animate );
+    controls.update();
+
+}
+
+            init();
+animate()
+        </script>
+    </body>
+</html>
